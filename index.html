@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+    </head>
+    <body>
+        <label for="item-name">Item</label>
+        <select name="item-name" id="dropdown-items"></select>
+        <button id="add-item">Add Item</button>
+
+        <form id="order-form">
+            <input id="submit" value="Submit Order" type="submit" />
+        </form>
+    </body>
+    <script>
+        let orderForm = document.getElementById("order-form");
+        let addItem = document.getElementById("add-item");
+        let select = document.getElementById("dropdown-items");
+
+        window.onload = () => {
+            getItems();
+        };
+
+        async function getItems() {
+            try {
+                let items = await fetch("/items");
+                if (items.ok) {
+                    let json = await items.json();
+                    console.log(json);
+                    for (let i = 0; i < json.length; i++) {
+                        let option = document.createElement("option");
+                        option.value = json[i].articleNumber;
+                        option.innerText = json[i].articleNumber;
+                        select.appendChild(option);
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+            }
+
+            addItem.addEventListener("click", () => {
+                let newInput = document.createElement("input");
+                newInput.type = "number";
+                newInput.placeholder = select.value;
+                newInput.name = select.value;
+                newInput.required = true;
+                let newLabel = document.createElement("label");
+                newLabel.innerText = select.value;
+                orderForm.insertBefore(newLabel, orderForm.submit);
+                orderForm.insertBefore(newInput, orderForm.submit);
+                orderForm.insertBefore(
+                    document.createElement("br"),
+                    orderForm.submit
+                );
+                select.removeChild(select.options[select.selectedIndex]);
+            });
+        }
+
+        async function handleSubmit() {
+            const form_obj = new FormData(orderForm);
+            let item_array = [];
+            for (var pair of form_obj.entries()) {
+                console.log(pair[0] + ", " + pair[1]);
+                let obj = {}
+                obj[pair[0]] = pair[1];
+                item_array.push(obj)
+            }
+            const myHeaders = new Headers();
+            myHeaders.append("Content-Type", "application/json");
+
+            try {
+                let post = await fetch("/postItem", {
+                    method: "POST",
+                    body: JSON.stringify(item_array),
+                    headers : myHeaders
+                });
+                console.log(await post.json());
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        orderForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            handleSubmit();
+        });
+    </script>
+</html>
